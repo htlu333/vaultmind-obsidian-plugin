@@ -1,0 +1,48 @@
+/* VaultMind Plugin Styles */
+
+.vaultmind-preview-modal {
+    max-width: 600px;
+    width: 80vw;
+}
+
+.vaultmind-preview-content {
+    margin-top: 20px;
+}
+
+.vaultmind-summary {
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.vaultmind-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.vaultmind-tag {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.9em;
+}
+
+.vaultmind-section-title {
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.vaultmind-suggestion-item {
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.vaultmind-suggestion-item:hover {
+    background-color: var(--background-modifier-hover);
+}

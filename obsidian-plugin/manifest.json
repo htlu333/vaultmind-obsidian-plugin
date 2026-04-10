@@ -1,0 +1,10 @@
+{
+	"id": "vaultmind-obsidian",
+	"name": "VaultMind",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "LLM-driven knowledge management assistant for Obsidian. Automatically generates summaries, tags, and MOC relations.",
+	"author": "VaultMind Team",
+	"authorUrl": "https://github.com/your-repo/vaultmind",
+	"isDesktopOnly": false
+}

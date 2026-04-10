@@ -8,6 +8,7 @@ export interface VaultMindSettings {
 	enableMoc: boolean;
 	maxLinksPerNote: number;
 	mocFolderPath: string;
+	tagAlignmentStrategy: 'off' | 'prefer_existing' | 'prefer_existing_and_autolink_moc';
 }
 
 export const DEFAULT_SETTINGS: VaultMindSettings = {
@@ -19,5 +20,6 @@ export const DEFAULT_SETTINGS: VaultMindSettings = {
 	enableBodyLinks: true,
 	enableMoc: true,
 	maxLinksPerNote: 3,
-	mocFolderPath: 'VaultMind/MOCs'
+	mocFolderPath: 'VaultMind/MOCs',
+	tagAlignmentStrategy: 'prefer_existing_and_autolink_moc'
 }
