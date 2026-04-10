@@ -1,0 +1,9 @@
+typer
+pydantic
+httpx
+ruamel.yaml
+python-dotenv
+pytest
+rich
+tenacity
+python-frontmatter
