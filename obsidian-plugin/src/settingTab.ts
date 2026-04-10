@@ -114,5 +114,20 @@ export class VaultMindSettingTab extends PluginSettingTab {
 					this.plugin.settings.mocFolderPath = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Tag Alignment Strategy')
+			.setDesc('How to align new tags with existing MOCs/tags.')
+			.addDropdown(dropdown => dropdown
+				.addOption('off', 'Off (No alignment)')
+				.addOption('prefer_existing', 'Prefer Existing (Suggest existing tags)')
+				.addOption('prefer_existing_and_autolink_moc', 'Prefer & Auto-link (Suggest and auto-bind to MOC)')
+				.setValue(this.plugin.settings.tagAlignmentStrategy)
+				.onChange(async (value) => {
+					if (value === 'off' || value === 'prefer_existing' || value === 'prefer_existing_and_autolink_moc') {
+						this.plugin.settings.tagAlignmentStrategy = value;
+						await this.plugin.saveSettings();
+					}
+				}));
 	}
 }

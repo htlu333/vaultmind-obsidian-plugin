@@ -13,6 +13,17 @@ type AnalyzedRecord = {
 	metadata: VaultMindMetadata;
 };
 
+async function getExistingMocs(app: App, plugin: VaultMindPlugin): Promise<string[]> {
+	const mocFolder = plugin.settings.mocFolderPath || 'VaultMind/MOCs';
+	const folder = app.vault.getAbstractFileByPath(mocFolder);
+	if (folder instanceof TFolder) {
+		return folder.children
+			.filter(file => file instanceof TFile && file.extension === 'md')
+			.map(file => file.name.replace(/\.md$/, ''));
+	}
+	return [];
+}
+
 export async function analyzeCurrentNote(app: App, plugin: VaultMindPlugin): Promise<VaultMindMetadata | null> {
 	const activeView = app.workspace.getActiveViewOfType(MarkdownView);
 	if (!activeView) {
@@ -91,14 +102,19 @@ export async function analyzeFile(app: App, plugin: VaultMindPlugin, file: TFile
 
 	const sourceType = detectSourceType(content, metadata);
 
+	let existingMocs: string[] = [];
+	if (plugin.settings.tagAlignmentStrategy !== 'off') {
+		existingMocs = await getExistingMocs(app, plugin);
+	}
+
 	let prompt = '';
 	if (sourceType === SourceType.PAPER) {
 		const extracted = extractPaperMetadata(content);
-		prompt = buildPaperPrompt(content, extracted);
+		prompt = buildPaperPrompt(content, extracted, existingMocs);
 	} else if (sourceType === SourceType.EXCERPT) {
-		prompt = buildExcerptPrompt(content);
+		prompt = buildExcerptPrompt(content, existingMocs);
 	} else {
-		prompt = buildNotePrompt(content);
+		prompt = buildNotePrompt(content, existingMocs);
 	}
 
 	new Notice(`Analyzing ${file.name} with DeepSeek...`);
@@ -140,10 +156,33 @@ async function applyGraphRelations(
 	prefix: string
 ): Promise<number> {
 	let linkCount = 0;
+	const existingMocs = await getExistingMocs(app, plugin);
 
 	for (const record of records) {
 		const relatedNotes = computeRelatedNotes(record, records, plugin.settings.maxLinksPerNote || 3);
-		const primaryTopic = record.metadata.vm_content_tags[0] || record.metadata.vm_file_tags[0] || '';
+		
+		// Logic for primaryTopic and MOC binding
+		let primaryTopic = '';
+		const contentTags = record.metadata.vm_content_tags;
+		
+		if (plugin.settings.tagAlignmentStrategy === 'prefer_existing_and_autolink_moc') {
+			// Only auto-link if the tag exists in MOCs
+			const matchedTag = contentTags.find(tag => existingMocs.includes(tag));
+			if (matchedTag) {
+				primaryTopic = matchedTag;
+			}
+		} else if (plugin.settings.tagAlignmentStrategy === 'prefer_existing') {
+			// Suggest existing tag but don't force MOC update if not matched? 
+			// Actually, the strategy name implies we just want the tags.
+			// If we want to suggest MOC pages in frontmatter, we can still do it if it matches.
+			const matchedTag = contentTags.find(tag => existingMocs.includes(tag));
+			if (matchedTag) {
+				primaryTopic = matchedTag;
+			}
+		} else {
+			// Default behavior (or 'off'): use first content tag
+			primaryTopic = contentTags[0] || '';
+		}
 
 		if (relatedNotes.length === 0 && !primaryTopic) {
 			continue;
@@ -152,8 +191,18 @@ async function applyGraphRelations(
 		await app.fileManager.processFrontMatter(record.file, fm => {
 			fm[`${prefix}related_notes`] = relatedNotes;
 			fm[`${prefix}graph_links_written`] = relatedNotes.length > 0;
+			
 			if (primaryTopic) {
-				fm[`${prefix}moc_pages`] = [primaryTopic];
+				// Only write to moc_pages if we are in an auto-link strategy or if it matches an existing MOC
+				const shouldWriteMocPage = plugin.settings.tagAlignmentStrategy === 'prefer_existing_and_autolink_moc' || 
+										 (plugin.settings.tagAlignmentStrategy !== 'off' && existingMocs.includes(primaryTopic));
+				
+				if (shouldWriteMocPage) {
+					const existingMocPages = normalizeArray(fm[`${prefix}moc_pages`]);
+					if (!existingMocPages.includes(primaryTopic)) {
+						fm[`${prefix}moc_pages`] = [...existingMocPages, primaryTopic];
+					}
+				}
 			}
 		});
 
@@ -161,8 +210,14 @@ async function applyGraphRelations(
 			await writeBodyLinks(app, record.file, relatedNotes, plugin);
 		}
 
-		if (primaryTopic) {
-			await updateMocPage(app, primaryTopic, record.file.basename, plugin);
+		if (primaryTopic && plugin.settings.enableMoc) {
+			// Only update MOC file if strategy allows it
+			const shouldUpdateMocFile = plugin.settings.tagAlignmentStrategy === 'prefer_existing_and_autolink_moc' || 
+									  (plugin.settings.tagAlignmentStrategy !== 'off' && existingMocs.includes(primaryTopic));
+			
+			if (shouldUpdateMocFile) {
+				await updateMocPage(app, primaryTopic, record.file.basename, plugin);
+			}
 		}
 
 		linkCount++;

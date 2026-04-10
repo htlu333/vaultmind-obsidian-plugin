@@ -1,8 +1,12 @@
 import { SourceType } from './types';
 
-export function buildNotePrompt(content: string): string {
+export function buildNotePrompt(content: string, existingTags: string[] = []): string {
+	const tagContext = existingTags.length > 0 
+		? `\n    目前已有的知识主题(MOC)包括: ${existingTags.join(', ')}。如果内容匹配，请优先从这些主题中选择作为标签。`
+		: "";
+
 	return `
-    你是一个专业的知识管理助手。请分析以下笔记内容，并提供摘要、标签和关联建议。
+    你是一个专业的知识管理助手。请分析以下笔记内容，并提供摘要、标签和关联建议。${tagContext}
     
     内容:
     ${content}
@@ -24,12 +28,15 @@ export function buildNotePrompt(content: string): string {
     `;
 }
 
-export function buildPaperPrompt(content: string, extracted: { abstract?: string; keywords?: string[] }): string {
+export function buildPaperPrompt(content: string, extracted: { abstract?: string; keywords?: string[] }, existingTags: string[] = []): string {
 	const abstract = extracted.abstract || '未找到。';
 	const keywords = extracted.keywords ? extracted.keywords.join(', ') : '未找到。';
+	const tagContext = existingTags.length > 0 
+		? `\n    目前已有的知识主题(MOC)包括: ${existingTags.join(', ')}。如果内容匹配，请优先从这些主题中选择作为标签。`
+		: "";
 
 	return `
-    你是一个专业的学术助手。请分析以下论文内容，并提供摘要、标签和关联建议。
+    你是一个专业的学术助手。请分析以下论文内容，并提供摘要、标签和关联建议。${tagContext}
     
     论文内容:
     ${content}
@@ -55,9 +62,13 @@ export function buildPaperPrompt(content: string, extracted: { abstract?: string
     `;
 }
 
-export function buildExcerptPrompt(content: string): string {
+export function buildExcerptPrompt(content: string, existingTags: string[] = []): string {
+	const tagContext = existingTags.length > 0 
+		? `\n    目前已有的知识主题(MOC)包括: ${existingTags.join(', ')}。如果内容匹配，请优先从这些主题中选择作为标签。`
+		: "";
+
 	return `
-    你是一个专业的知识管理助手。请分析以下摘录内容，并提供摘要、标签和关联建议。
+    你是一个专业的知识管理助手。请分析以下摘录内容，并提供摘要、标签和关联建议。${tagContext}
     
     摘录内容:
     ${content}
